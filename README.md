@@ -1,5 +1,6 @@
-Generate Bitcoin Core BIP32 addresses
-```
+## Generate Bitcoin Core BIP32 addresses
+
+```python
 # create_btc_wallet.py
 
 from pywallet import wallet
