@@ -97,7 +97,7 @@ def get_network(network='btctest'):
     return BitcoinTestNet
 
 
-def create_wallet(network='btctest', seed=None, children=1):
+def create_wallet(network='btc', seed=None, path="m/0'/0'", num=1, hardened=True):
     if seed is None:
         seed = generate_mnemonic()
 
@@ -153,24 +153,18 @@ def create_wallet(network='btctest', seed=None, children=1):
             network=network.upper(), seed=seed)
 
         # account level
-        wallet["private_key"] = my_wallet.private_key.get_key().decode()
-        wallet["public_key"] = my_wallet.public_key.get_key().decode()
         wallet["xprivate_key"] = my_wallet.serialize_b58(private=True)
         wallet["xpublic_key"] = my_wallet.serialize_b58(private=False)
-        wallet["address"] = my_wallet.to_address()
-        wallet["wif"] = my_wallet.export_to_wif()
+        wallet["path"] = path
 
-        prime_child_wallet = my_wallet.get_child(0, is_prime=True)
-        wallet["xpublic_key_prime"] = prime_child_wallet.serialize_b58(private=False)
+        prime_child_wallet = my_wallet.get_child_for_path(path)
 
         # prime children
-        for child in range(children):
-            child_wallet = my_wallet.get_child(child, is_prime=False, as_private=False)
-            wallet["children"].append({
-                "xpublic_key": child_wallet.serialize_b58(private=False),
-                "address": child_wallet.to_address(),
-                "path": "m/" + str(child),
-                "bip32_path": net.BIP32_PATH + str(child_wallet.child_number),
-            })
+        def addr_closure():
+            for child in range(num):
+                child_wallet = prime_child_wallet.get_child(child, is_prime=hardened, as_private=True)
+                yield (child_wallet.export_to_wif(), child_wallet.to_address(), "%s/%d%s" % (path, child, '' if not hardened else "'"))
+
+        wallet["addresses"] = addr_closure()
 
     return wallet
